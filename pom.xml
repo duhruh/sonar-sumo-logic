@@ -5,7 +5,7 @@
   <groupId>org.sonar.plugins.sumo</groupId>
   <artifactId>sonar-sumo-logic</artifactId>
   <packaging>sonar-plugin</packaging>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
 
   <name>SonarQube :: Sumo Logic Plugin</name>
   <description>Export metrics to Sumo Logic</description>

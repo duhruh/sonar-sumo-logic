@@ -50,7 +50,10 @@ public class MetricsLoader {
     }
 
     private WsClient generateClient(){
-        HttpConnector connector = HttpConnector.newBuilder().url(getServerURL()).build();
+        HttpConnector connector = HttpConnector.newBuilder()
+                .url(getServerURL())
+                .credentials(configuration.get(CoreProperties.LOGIN).orElse(""), "")
+                .build();
         return WsClientFactories.getLocal().newClient(connector);
     }
 
