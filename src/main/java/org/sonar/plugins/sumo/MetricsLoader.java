@@ -8,6 +8,7 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonar.plugins.sumo.settings.SumoLogicProperties;
 import org.sonarqube.ws.WsMeasures;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
@@ -52,7 +53,7 @@ public class MetricsLoader {
     private WsClient generateClient(){
         HttpConnector connector = HttpConnector.newBuilder()
                 .url(getServerURL())
-                .credentials(configuration.get(CoreProperties.LOGIN).orElse(""), "")
+                .credentials(configuration.get(SumoLogicProperties.SUMO_SONAR_LOGIN_KEY).orElse(""), "")
                 .build();
         return WsClientFactories.getLocal().newClient(connector);
     }

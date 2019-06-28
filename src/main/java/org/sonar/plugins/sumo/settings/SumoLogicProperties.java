@@ -14,6 +14,7 @@ public class SumoLogicProperties {
   public static final String CATEGORY = "Sumo Logic";
   public static final String ACCESS_KEY_KEY = "sonar.sumo.accessKey";
   public static final String HOST_KEY = "sonar.sumo.host";
+  public static final String SUMO_SONAR_LOGIN_KEY = "sonar.sumo.sonarLogin";
 
   private SumoLogicProperties() {
   }
@@ -43,6 +44,14 @@ public class SumoLogicProperties {
             .defaultValue(String.valueOf(false))
             .category(CATEGORY)
             .type(PropertyType.STRING)
+            .build(),
+    PropertyDefinition.builder(SUMO_SONAR_LOGIN_KEY)
+            .name("Sonar Login")
+            .description("Sonar login for internal requests to metrics")
+            .onQualifiers(Qualifiers.PROJECT)
+            .defaultValue(String.valueOf(false))
+            .category(CATEGORY)
+            .type(PropertyType.PASSWORD)
             .build());
   }
 
