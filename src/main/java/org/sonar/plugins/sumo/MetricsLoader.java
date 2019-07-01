@@ -1,9 +1,10 @@
 package org.sonar.plugins.sumo;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.ce.ComputeEngineSide;
-import org.sonar.api.ce.posttask.PostProjectAnalysisTask;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
@@ -24,13 +25,10 @@ import java.util.List;
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
 public class MetricsLoader {
     private static final Logger LOG = Loggers.get(MetricsLoader.class);
+    private static final String DEFAULT_SERVER_URL = "http://localhost:8080";
 
     private final Configuration configuration;
 
-    private SumoLogicService service;
-
-    private static final String DEFAULT_BRANCH = "master";
-    private static final String DEFAULT_SERVER_URL = "http://localhost:8080";
 
     private static final List<String> METRICS = Collections.unmodifiableList(
             new ArrayList<String>(){{
@@ -45,9 +43,8 @@ public class MetricsLoader {
                 add("periods");
             }});
 
-    public MetricsLoader(Configuration configuration, SumoLogicService service) {
+    public MetricsLoader(Configuration configuration) {
         this.configuration = configuration;
-        this.service = service;
     }
 
     private WsClient generateClient(){
@@ -58,23 +55,14 @@ public class MetricsLoader {
         return WsClientFactories.getLocal().newClient(connector);
     }
 
-    private ComponentWsRequest generateRequest(PostProjectAnalysisTask.ProjectAnalysis analysis){
+    private ComponentWsRequest generateRequest(ProjectAnalysisHelper analysis){
         ComponentWsRequest request = new ComponentWsRequest();
-        request.setBranch(getBranch(analysis));
-        request.setComponent(getProjectName(analysis));
+        request.setBranch(analysis.getBranch());
+        request.setComponent(analysis.getProjectName());
         request.setMetricKeys(METRICS);
         request.setAdditionalFields(ADDITIONAL);
 
         return request;
-    }
-
-    private String getBranch(PostProjectAnalysisTask.ProjectAnalysis analysis){
-        if (analysis.getBranch().isPresent()){
-            return analysis.getBranch().get().getName()
-                    .orElse(DEFAULT_BRANCH);
-        }
-
-        return DEFAULT_BRANCH;
     }
 
     private String getServerURL(){
@@ -82,12 +70,8 @@ public class MetricsLoader {
                 .orElse(DEFAULT_SERVER_URL);
     }
 
-    private String getProjectName(PostProjectAnalysisTask.ProjectAnalysis analysis){
-        return analysis.getProject().getName();
-    }
-
-    public void getProject(PostProjectAnalysisTask.ProjectAnalysis analysis){
-        LOG.info("Retrieving metrics for: "+getProjectName(analysis)+"/"+getBranch(analysis));
+    public ComponentResponse getMetricsFromAnalysis(ProjectAnalysisHelper analysis){
+        LOG.info("Retrieving metrics for: "+analysis.getProjectName()+"/"+analysis.getBranch());
 
         WsMeasures.ComponentWsResponse resp = generateClient()
                 .measures()
@@ -95,6 +79,24 @@ public class MetricsLoader {
 
         LOG.debug(resp.toString());
 
-        service.pushMetrics(resp);
+        return new ComponentResponse(resp);
+    }
+
+
+
+    public class ComponentResponse {
+
+        private final WsMeasures.ComponentWsResponse  response;
+
+        public ComponentResponse(WsMeasures.ComponentWsResponse response){
+            this.response = response;
+        }
+
+        public String toJson() throws InvalidProtocolBufferException {
+            return JsonFormat.printer()
+                    .print(response)
+                    .trim()
+                    .replaceAll("\\r|\\n", "");
+        }
     }
 }

@@ -1,8 +1,6 @@
 package org.sonar.plugins.sumo;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.MessageOrBuilder;
-import com.google.protobuf.util.JsonFormat;
 import com.sumologic.client.Credentials;
 import com.sumologic.client.SumoLogic;
 import com.sumologic.client.SumoLogicClient;
@@ -16,7 +14,6 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plugins.sumo.settings.SumoLogicProperties;
-import org.sonarqube.ws.WsMeasures;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -51,29 +48,22 @@ public class SumoLogicService {
         this.sumoLogic = client;
     }
 
-    private String getSourceCategoryHeader(WsMeasures.ComponentWsResponse response){
+    private String getSourceCategoryHeader(ProjectAnalysisHelper analysis){
         return DEFAULT_SOURCE_CATEGORY_PREFIX +
                 "/" +
-                response.getComponent().getName() +
+                analysis.getProjectName() +
                 "/" +
-                response.getComponent().getBranch();
+                analysis.getBranch();
     }
 
     private CloseableHttpClient generateHttpClient(){
         return HttpClients.createDefault();
     }
 
-    private String protobufToJson(MessageOrBuilder message) throws InvalidProtocolBufferException {
-        return JsonFormat.printer()
-                .print(message)
-                .trim()
-                .replaceAll("\\r|\\n", "");
-    }
-
-    private HttpPost generatePostRequest(WsMeasures.ComponentWsResponse message) throws InvalidProtocolBufferException, UnsupportedEncodingException {
+    private HttpPost generatePostRequest(MetricsLoader.ComponentResponse message, ProjectAnalysisHelper analysis) throws InvalidProtocolBufferException, UnsupportedEncodingException {
         HttpPost httpPost = new HttpPost(url);
-        httpPost.setHeader(SOURCE_CATEGORY_HEADER, getSourceCategoryHeader(message));
-        httpPost.setEntity(new StringEntity(protobufToJson(message)));
+        httpPost.setHeader(SOURCE_CATEGORY_HEADER, getSourceCategoryHeader(analysis));
+        httpPost.setEntity(new StringEntity(message.toJson()));
         return httpPost;
     }
 
@@ -82,12 +72,12 @@ public class SumoLogicService {
      * https://help.sumologic.com/03Send-Data/Sources/02Sources-for-Hosted-Collectors/HTTP-Source/Upload-Data-to-an-HTTP-Source
      * @param message
      */
-    public void pushMetrics(WsMeasures.ComponentWsResponse message) {
+    public void pushMetrics(MetricsLoader.ComponentResponse message, ProjectAnalysisHelper analysis) {
 
         try {
             CloseableHttpClient client = generateHttpClient();
 
-            CloseableHttpResponse response = client.execute(generatePostRequest(message));
+            CloseableHttpResponse response = client.execute(generatePostRequest(message, analysis));
 
             LOG.info("Uploaded metrics to Sumo Logic: "+ response.getStatusLine());
 
