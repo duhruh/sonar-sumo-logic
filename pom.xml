@@ -5,7 +5,7 @@
   <groupId>org.sonar.plugins.sumo</groupId>
   <artifactId>sonar-sumo-logic</artifactId>
   <packaging>sonar-plugin</packaging>
-  <version>1.0.3-SNAPSHOT</version>
+  <version>1.0.4-SNAPSHOT</version>
 
   <name>Sumo Logic</name>
   <description>Export metrics to Sumo Logic</description>

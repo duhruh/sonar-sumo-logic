@@ -7,6 +7,7 @@ import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.ce.ComputeEngineSide;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.measures.CoreMetrics;
+import org.sonar.api.measures.Metric;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.plugins.sumo.settings.SumoLogicProperties;
@@ -29,12 +30,10 @@ public class MetricsLoader {
 
     private final Configuration configuration;
 
-
-    private static final List<String> METRICS = Collections.unmodifiableList(
+    private static final List<String> IGNORE_KEYS = Collections.unmodifiableList(
             new ArrayList<String>(){{
-                add(CoreMetrics.NCLOC_KEY);
-                add(CoreMetrics.COMPLEXITY_KEY);
-                add(CoreMetrics.VIOLATIONS_KEY);
+                add("development_cost");
+                add("new_development_cost");
             }});
 
     private static final List<String> ADDITIONAL = Collections.unmodifiableList(
@@ -59,7 +58,7 @@ public class MetricsLoader {
         ComponentWsRequest request = new ComponentWsRequest();
         request.setBranch(analysis.getBranch());
         request.setComponent(analysis.getProjectName());
-        request.setMetricKeys(METRICS);
+        request.setMetricKeys(getMetricKeys());
         request.setAdditionalFields(ADDITIONAL);
 
         return request;
@@ -68,6 +67,18 @@ public class MetricsLoader {
     private String getServerURL(){
         return configuration.get(CoreProperties.SERVER_BASE_URL)
                 .orElse(DEFAULT_SERVER_URL);
+    }
+
+
+
+    private List<String> getMetricKeys(){
+        List<String> keys = new ArrayList<>();
+        for(Metric metric :CoreMetrics.getMetrics()){
+            if (!IGNORE_KEYS.contains(metric.getKey())){
+                keys.add(metric.getKey());
+            }
+        }
+        return keys;
     }
 
     public ComponentResponse getMetricsFromAnalysis(ProjectAnalysisHelper analysis){
@@ -84,7 +95,7 @@ public class MetricsLoader {
 
 
 
-    public class ComponentResponse {
+    public class ComponentResponse implements SumoPayload{
 
         private final WsMeasures.ComponentWsResponse  response;
 
@@ -92,11 +103,17 @@ public class MetricsLoader {
             this.response = response;
         }
 
-        public String toJson() throws InvalidProtocolBufferException {
-            return JsonFormat.printer()
-                    .print(response)
-                    .trim()
-                    .replaceAll("\\r|\\n", "");
+        @Override
+        public String toJson() {
+            try{
+                return JsonFormat.printer()
+                        .print(response)
+                        .trim()
+                        .replaceAll("\\r|\\n", "");
+            }catch (InvalidProtocolBufferException e){
+                return "{\"error\": \""+e.getMessage()+"\"}";
+            }
+
         }
     }
 }

@@ -4,9 +4,7 @@ import org.sonar.api.ce.posttask.PostProjectAnalysisTask;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonar.plugins.sumo.MetricsLoader;
-import org.sonar.plugins.sumo.ProjectAnalysisHelper;
-import org.sonar.plugins.sumo.SumoLogicService;
+import org.sonar.plugins.sumo.*;
 
 import java.net.MalformedURLException;
 
@@ -29,7 +27,9 @@ public class DisplayQualityGateStatus implements PostProjectAnalysisTask {
 
       MetricsLoader.ComponentResponse metrics = loader.getMetricsFromAnalysis(meta);
 
-      service.pushMetrics(metrics, meta);
+      SumoPayload payload = new MetricsDecorator(metrics, meta);
+
+      service.pushMetrics(payload, meta);
     } catch (MalformedURLException e) {
       LOG.error(e.getMessage());
       e.printStackTrace();

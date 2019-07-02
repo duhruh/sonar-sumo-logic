@@ -60,24 +60,25 @@ public class SumoLogicService {
         return HttpClients.createDefault();
     }
 
-    private HttpPost generatePostRequest(MetricsLoader.ComponentResponse message, ProjectAnalysisHelper analysis) throws InvalidProtocolBufferException, UnsupportedEncodingException {
+    private HttpPost generatePostRequest(SumoPayload payload, ProjectAnalysisHelper analysis) throws InvalidProtocolBufferException, UnsupportedEncodingException {
         HttpPost httpPost = new HttpPost(url);
         httpPost.setHeader(SOURCE_CATEGORY_HEADER, getSourceCategoryHeader(analysis));
-        httpPost.setEntity(new StringEntity(message.toJson()));
+        httpPost.setEntity(new StringEntity(payload.toJson()));
         return httpPost;
     }
 
     /**
      * Pushes WsMeasures.ComponentWsResponse to Sumo Logic using
      * https://help.sumologic.com/03Send-Data/Sources/02Sources-for-Hosted-Collectors/HTTP-Source/Upload-Data-to-an-HTTP-Source
-     * @param message
+     * @param payload
+     * @param analysis
      */
-    public void pushMetrics(MetricsLoader.ComponentResponse message, ProjectAnalysisHelper analysis) {
+    public void pushMetrics(SumoPayload payload, ProjectAnalysisHelper analysis) {
 
         try {
             CloseableHttpClient client = generateHttpClient();
 
-            CloseableHttpResponse response = client.execute(generatePostRequest(message, analysis));
+            CloseableHttpResponse response = client.execute(generatePostRequest(payload, analysis));
 
             LOG.info("Uploaded metrics to Sumo Logic: "+ response.getStatusLine());
 
